@@ -22,8 +22,8 @@ on:
       dry-run:
         description: 'dry run mode'
         type: choice
-        options: [off, extract, lookup, full]
-        default: off
+        options: [none, extract, lookup, full]
+        default: none
       log-level:
         type: choice
         options: [info, debug]
@@ -43,7 +43,7 @@ jobs:
         with:
           app-client-id: ${{ vars.APP_CLIENT_ID }}
           app-private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          dry-run: ${{ inputs.dry-run != 'off' && inputs.dry-run || '' }}
+          dry-run: ${{ inputs.dry-run != 'none' && inputs.dry-run || '' }}
           log-level: ${{ inputs.log-level || 'info' }}
 ```
 

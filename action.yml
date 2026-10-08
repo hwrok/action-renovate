@@ -35,8 +35,14 @@ runs:
     - name: validate inputs
       shell: bash
       env:
+        DRY_RUN: ${{ inputs.dry-run }}
         FAIL_ON: ${{ inputs.fail-on }}
       run: |
+        if [[ ! "$DRY_RUN" =~ ^(extract|lookup|full)?$ ]]; then
+          echo "::error::dry-run must be extract, lookup, full, or empty, got '$DRY_RUN'"
+          exit 1
+        fi
+
         if [[ ! "$FAIL_ON" =~ ^(warn|error|none)$ ]]; then
           echo "::error::fail-on must be warn, error, or none, got '$FAIL_ON'"
           exit 1
