@@ -108,6 +108,39 @@ runs:
         path: /tmp/renovate/cache/renovate/repository
         key: renovate-cache-${{ github.run_id }}-${{ github.run_attempt }}
 
+    # an update with no release date can't clear a cooldown, so it's held - maybe forever; common for registries like ghcr
+    - name: report held updates
+      if: ${{ !cancelled() }}
+      shell: bash
+      env:
+        REPORT: /tmp/renovate/report.json
+      run: |
+        if [ ! -f "$REPORT" ]; then
+          exit 0
+        fi
+
+        held="$(jq -r '
+          .repositories[] | (.packageFiles // {}) | to_entries[] | .value[] | .deps[]
+          | . as $dep | (.updates // [])[]
+          | select(.pendingChecks == true and .releaseTimestamp == null)
+          | "\($dep.depName) \($dep.currentValue) -> \(.newValue)"
+        ' "$REPORT" | sort -u)"
+
+        if [ -z "$held" ]; then
+          exit 0
+        fi
+
+        while IFS= read -r update; do
+          echo "::notice::renovate held (no release date): $update"
+        done <<< "$held"
+        {
+          echo "### renovate: updates held (no release date)"
+          echo
+          echo 'opt a dep in per repo with `minimumReleaseAgeBehaviour: "timestamp-optional"`'
+          echo
+          sed 's/^/- /' <<< "$held"
+        } >> "$GITHUB_STEP_SUMMARY"
+
     # renovate exits 0 on a lot of per-repo failures (auth, host errors) - the report doesn't
     - name: check report
       if: ${{ !cancelled() }}
