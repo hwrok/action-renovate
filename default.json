@@ -6,7 +6,7 @@
   "prHourlyLimit": 0,
   "semanticCommits": "enabled",
   "rangeStrategy": "pin",
-  "postUpdateOptions": ["gomodTidy"],
+  "postUpdateOptions": ["gomodTidy", "gomodUpdateImportPaths"],
   "prBodyTemplate": "{{{header}}}{{{table}}}{{{warnings}}}{{{notes}}}{{{controls}}}",
   "vulnerabilityAlerts": {
     "enabled": true,

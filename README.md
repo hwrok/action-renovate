@@ -102,7 +102,7 @@ ignore-problems: |
 - Actions pinned to SHA with a `# vX.Y.Z` comment
 - Exact version pins (`rangeStrategy: pin`), except `engines`, which is left alone
 - Groups: `github-actions`, `npm`, `terraform`, `docker`, `go`, and `toolchain`. Majors split into `major-*` PRs
-- Go: `go mod tidy` runs after updates. The `go` directive is a floor and is never bumped; the `toolchain` directive is, in `toolchain`
+- Go: `go mod tidy` runs after updates, and majors rewrite `/vN` import paths in code (`gomodUpdateImportPaths`). The `go` directive is a floor and is never bumped; the `toolchain` directive is, in `toolchain`
 - Cooldowns: major 60d, minor 14d, patch 7d; vulnerability fixes 0d. Versioned runner labels (`ubuntu-24.04`) skip cooldowns; `-latest` is never touched
 - Updates without a release date (e.g. ghcr.io images) are held by the cooldown indefinitely (the job lists them as notices). Opt specific deps in per repo with `minimumReleaseAgeBehaviour: "timestamp-optional"`
 - Dependency Dashboard off. To rebase/retry a PR, tick its checkbox, then dispatch the workflow
