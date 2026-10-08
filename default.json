@@ -5,7 +5,7 @@
   "dependencyDashboard": false,
   "semanticCommits": "enabled",
   "rangeStrategy": "pin",
-  "prBodyTemplate": "{{{header}}}{{{table}}}{{{notes}}}{{{changelogs}}}{{{controls}}}",
+  "prBodyTemplate": "{{{header}}}{{{table}}}{{{warnings}}}{{{notes}}}{{{controls}}}",
   "vulnerabilityAlerts": {
     "enabled": true,
     "minimumReleaseAge": "0 days"
@@ -18,16 +18,28 @@
     },
     {
       "matchManagers": ["github-actions"],
-      "groupName": "github-actions"
+      "groupName": "github-actions",
+      "commitMessageAction": "Update",
+      "group": {
+        "commitMessageTopic": "{{{groupName}}}"
+      }
     },
     {
       "matchManagers": ["npm"],
-      "groupName": "npm"
+      "groupName": "npm",
+      "commitMessageAction": "Update",
+      "group": {
+        "commitMessageTopic": "{{{groupName}}}"
+      }
     },
     {
       "description": "node/pnpm versions span packageManager, .nvmrc, setup-* inputs, and Dockerfiles - grouped so one bump is one PR",
       "matchDepNames": ["node", "pnpm"],
-      "groupName": "toolchain"
+      "groupName": "toolchain",
+      "commitMessageAction": "Update",
+      "group": {
+        "commitMessageTopic": "{{{groupName}}}"
+      }
     },
     {
       "matchUpdateTypes": ["major"],
