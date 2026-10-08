@@ -3,6 +3,7 @@
   "description": "hwrok renovate defaults - https://github.com/hwrok/action-renovate",
   "extends": ["config:recommended", "helpers:pinGitHubActionDigestsToSemver"],
   "dependencyDashboard": false,
+  "prHourlyLimit": 0,
   "semanticCommits": "enabled",
   "rangeStrategy": "pin",
   "prBodyTemplate": "{{{header}}}{{{table}}}{{{warnings}}}{{{notes}}}{{{controls}}}",
