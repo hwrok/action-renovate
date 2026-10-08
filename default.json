@@ -34,6 +34,14 @@
       }
     },
     {
+      "matchManagers": ["terraform"],
+      "groupName": "terraform",
+      "commitMessageAction": "Update",
+      "group": {
+        "commitMessageTopic": "{{{groupName}}}"
+      }
+    },
+    {
       "description": "node/pnpm versions span packageManager, .nvmrc, setup-* inputs, and Dockerfiles - grouped so one bump is one PR",
       "matchDepNames": ["node", "pnpm"],
       "groupName": "toolchain",

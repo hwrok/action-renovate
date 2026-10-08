@@ -28,6 +28,10 @@ inputs:
     description: 'fail the job if renovate reports a problem at or above this level (warn, error, none)'
     required: false
     default: 'warn'
+  ignore-problems:
+    description: 'newline-separated regexes; report problems whose message matches one are not counted'
+    required: false
+    default: ''
 
 runs:
   using: 'composite'
@@ -110,6 +114,7 @@ runs:
       shell: bash
       env:
         FAIL_ON: ${{ inputs.fail-on }}
+        IGNORE_PROBLEMS: ${{ inputs.ignore-problems }}
         REPORT: /tmp/renovate/report.json
       run: |
         # renovate (bunyan) log levels
@@ -125,11 +130,21 @@ runs:
         fi
 
         # problems are reported both globally and per repository
-        problems="$(jq -c --argjson min_level "$min_level" '
+        reported="$(jq -c --argjson min_level "$min_level" '
           [.problems[], (.repositories[] | (.problems // [])[])]
           | map(select(.level >= $min_level))
         ' "$REPORT")"
+
+        problems="$(jq -c --arg ignore "$IGNORE_PROBLEMS" '
+          ($ignore | split("\n") | map(gsub("^\\s+|\\s+$"; "")) | map(select(length > 0))) as $patterns
+          | map(select(.msg as $msg | $patterns | any(. as $p | $msg | test($p)) | not))
+        ' <<< "$reported")"
+
         problem_count="$(jq 'length' <<< "$problems")"
+        ignored_count=$(( $(jq 'length' <<< "$reported") - problem_count ))
+        if [ "$ignored_count" -gt 0 ]; then
+          echo "::notice::ignored $ignored_count renovate problem(s) matching ignore-problems"
+        fi
 
         if [ "$problem_count" -eq 0 ]; then
           echo "no renovate problems at or above $FAIL_ON"

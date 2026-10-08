@@ -68,16 +68,24 @@ A repo without a renovate config is skipped (`requireConfig: required`, no onboa
 
 ## Inputs
 
-| Input              | Description                                                                | Default |
-| ------------------ | -------------------------------------------------------------------------- | ------- |
-| `app-client-id`    | GitHub App client id                                                       |         |
-| `app-private-key`  | GitHub App private key                                                     |         |
-| `dry-run`          | `extract`, `lookup`, `full`; empty = real run                              | `''`    |
-| `log-level`        | Renovate log level                                                         | `info`  |
-| `repository-cache` | Persist Renovate's repository cache via `actions/cache`                    | `true`  |
-| `fail-on`          | Lowest report problem level that fails the job: `warn`, `error`, or `none` | `warn`  |
+| Input              | Description                                                                          | Default |
+| ------------------ | ------------------------------------------------------------------------------------ | ------- |
+| `app-client-id`    | GitHub App client id                                                                 |         |
+| `app-private-key`  | GitHub App private key                                                               |         |
+| `dry-run`          | `extract`, `lookup`, `full`; empty = real run                                        | `''`    |
+| `log-level`        | Renovate log level                                                                   | `info`  |
+| `repository-cache` | Persist Renovate's repository cache via `actions/cache`                              | `true`  |
+| `fail-on`          | Lowest report problem level that fails the job: `warn`, `error`, or `none`           | `warn`  |
+| `ignore-problems`  | Newline-separated regexes; matching report problems don't fail the job, at any level | `''`    |
 
 Renovate exits 0 on plenty of per-repo failures (bad token, external host errors), so `fail-on` reads Renovate's JSON report instead of trusting the exit code.
+
+Known-harmless warnings can be skipped per repo:
+
+```yaml
+ignore-problems: |
+  ^Could not determine resolved version after updating package file
+```
 
 ## Preset
 
@@ -85,7 +93,7 @@ Renovate exits 0 on plenty of per-repo failures (bad token, external host errors
 
 - Actions pinned to SHA with a `# vX.Y.Z` comment
 - Exact version pins (`rangeStrategy: pin`), except `engines`, which is left alone
-- Groups: `github-actions`, `npm`, and `toolchain`. Majors split into `major-*` PRs
+- Groups: `github-actions`, `npm`, `terraform`, and `toolchain`. Majors split into `major-*` PRs
 - Cooldowns: major 60d, minor 14d, patch 7d; vulnerability fixes 0d
 - Dependency Dashboard off. To rebase/retry a PR, tick its checkbox, then dispatch the workflow
 
