@@ -148,6 +148,8 @@ runs:
       env:
         FAIL_ON: ${{ inputs.fail-on }}
         IGNORE_PROBLEMS: ${{ inputs.ignore-problems }}
+        # runs with this warning have already explicitly opted into timestamp-optional
+        OPT_IN_WARNINGS: '^Some (release|upgrade)\(s\) did not have a releaseTimestamp, but as we.re running with minimumReleaseAgeBehaviour=timestamp-optional'
         REPORT: /tmp/renovate/report.json
       run: |
         # renovate (bunyan) log levels
@@ -168,13 +170,23 @@ runs:
           | map(select(.level >= $min_level))
         ' "$REPORT")"
 
-        problems="$(jq -c --arg ignore "$IGNORE_PROBLEMS" '
-          ($ignore | split("\n") | map(gsub("^\\s+|\\s+$"; "")) | map(select(length > 0))) as $patterns
-          | map(select(.msg as $msg | $patterns | any(. as $p | $msg | test($p)) | not))
-        ' <<< "$reported")"
+        # drops problems whose message matches any of the newline-separated regexes in $1
+        drop_matching() {
+          jq -c --arg ignore "$1" '
+            ($ignore | split("\n") | map(gsub("^\\s+|\\s+$"; "")) | map(select(length > 0))) as $patterns
+            | map(select(.msg as $msg | $patterns | any(. as $p | $msg | test($p)) | not))
+          '
+        }
+
+        unexpected="$(drop_matching "$OPT_IN_WARNINGS" <<< "$reported")"
+        problems="$(drop_matching "$IGNORE_PROBLEMS" <<< "$unexpected")"
 
         problem_count="$(jq 'length' <<< "$problems")"
-        ignored_count=$(( $(jq 'length' <<< "$reported") - problem_count ))
+        opt_in_count=$(( $(jq 'length' <<< "$reported") - $(jq 'length' <<< "$unexpected") ))
+        ignored_count=$(( $(jq 'length' <<< "$unexpected") - problem_count ))
+        if [ "$opt_in_count" -gt 0 ]; then
+          echo "::notice::ignored $opt_in_count expected renovate warning(s) from timestamp-optional opt-ins"
+        fi
         if [ "$ignored_count" -gt 0 ]; then
           echo "::notice::ignored $ignored_count renovate problem(s) matching ignore-problems"
         fi
