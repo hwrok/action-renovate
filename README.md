@@ -17,6 +17,12 @@ on:
   schedule:
     - cron: '17 6 1 * *' # 1st of the month, 06:17
       timezone: 'America/Chicago'
+  # when renovate updates, merge it first and it will apply new config immediately
+  push:
+    branches: [main]
+    paths:
+      - .github/renovate.json
+      - .github/workflows/renovate.yml
   workflow_dispatch:
     inputs:
       dry-run:
@@ -54,9 +60,11 @@ jobs:
 ```json
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["github>hwrok/action-renovate#v1"]
+  "extends": ["github>hwrok/action-renovate#v1.x.y"]
 }
 ```
+
+Pin the preset to the same version as the action. Renovate bumps both together in one `action-renovate` PR, with no cooldown.
 
 A repo without a renovate config is skipped (`requireConfig: required`, no onboarding PRs).
 
@@ -94,7 +102,7 @@ ignore-problems: |
 - Actions pinned to SHA with a `# vX.Y.Z` comment
 - Exact version pins (`rangeStrategy: pin`), except `engines`, which is left alone
 - Groups: `github-actions`, `npm`, `terraform`, and `toolchain`. Majors split into `major-*` PRs
-- Cooldowns: major 60d, minor 14d, patch 7d; vulnerability fixes 0d
+- Cooldowns: major 60d, minor 14d, patch 7d; vulnerability fixes 0d. Versioned runner labels (`ubuntu-24.04`) skip cooldowns; `-latest` is never touched
 - Dependency Dashboard off. To rebase/retry a PR, tick its checkbox, then dispatch the workflow
 
 Override anything in the consuming repo's config.

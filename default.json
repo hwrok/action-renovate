@@ -61,6 +61,21 @@
     {
       "matchUpdateTypes": ["patch"],
       "minimumReleaseAge": "7 days"
+    },
+    {
+      "description": "runner versions have no release dates, so a cooldown would hold them forever",
+      "matchDatasources": ["github-runners"],
+      "minimumReleaseAge": null
+    },
+    {
+      "description": "bump action, preset, etc together",
+      "matchPackageNames": ["hwrok/action-renovate"],
+      "groupName": "action-renovate",
+      "commitMessageAction": "Update",
+      "group": {
+        "commitMessageTopic": "{{{groupName}}}"
+      },
+      "minimumReleaseAge": null
     }
   ]
 }
