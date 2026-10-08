@@ -28,21 +28,12 @@ on:
         type: choice
         options: [info, debug]
         default: info
-  pull_request:
-    types: [edited]
 
 permissions:
   contents: read
 
 jobs:
   renovate:
-    # pull_request: only the rebase/retry checkbox on renovate's own PRs
-    if: >-
-      github.event_name != 'pull_request' || (
-        startsWith(github.head_ref, 'renovate/') &&
-        github.event.sender.type != 'Bot' &&
-        contains(github.event.pull_request.body, '- [x] <!-- rebase-check -->')
-      )
     concurrency:
       group: renovate
       cancel-in-progress: false
@@ -96,7 +87,7 @@ Renovate exits 0 on plenty of per-repo failures (bad token, external host errors
 - Exact version pins (`rangeStrategy: pin`), except `engines`, which is left alone
 - Groups: `github-actions`, `npm`, and `toolchain`. Majors split into `major-*` PRs
 - Cooldowns: major 60d, minor 14d, patch 7d; vulnerability fixes 0d
-- Dependency Dashboard off; rebase via the PR checkbox
+- Dependency Dashboard off. To rebase/retry a PR, tick its checkbox, then dispatch the workflow
 
 Override anything in the consuming repo's config.
 

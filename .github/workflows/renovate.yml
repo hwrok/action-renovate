@@ -15,22 +15,12 @@ on:
         type: choice
         options: [info, debug]
         default: info
-  pull_request:
-    types: [edited]
 
 permissions:
   contents: read
 
 jobs:
   renovate:
-    # pull_request: only the rebase/retry checkbox on renovate's own PRs
-    if: >-
-      github.event_name != 'pull_request' || (
-        startsWith(github.head_ref, 'renovate/') &&
-        github.event.sender.type != 'Bot' &&
-        contains(github.event.pull_request.body, '- [x] <!-- rebase-check -->')
-      )
-    # job-level so skipped pull_request runs don't queue behind a real one
     concurrency:
       group: renovate
       cancel-in-progress: false
