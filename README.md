@@ -88,11 +88,16 @@ A repo without a renovate config is skipped (`requireConfig: required`, no onboa
 
 Renovate exits 0 on plenty of per-repo failures (bad token, external host errors), so `fail-on` reads Renovate's JSON report instead of trusting the exit code.
 
-Known-harmless warnings can be skipped per repo:
+Known-harmless warnings are always skipped:
+
+- `timestamp-optional`: only shows up for deps a repo explicitly opted in
+- Terraform "Could not determine resolved version": Renovate skipping an optional post-update check
+
+Anything else can be skipped per repo:
 
 ```yaml
 ignore-problems: |
-  ^Could not determine resolved version after updating package file
+  ^Some exact warning message
 ```
 
 ## Preset

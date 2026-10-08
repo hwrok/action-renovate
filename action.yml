@@ -148,8 +148,12 @@ runs:
       env:
         FAIL_ON: ${{ inputs.fail-on }}
         IGNORE_PROBLEMS: ${{ inputs.ignore-problems }}
-        # runs with this warning have already explicitly opted into timestamp-optional
-        OPT_IN_WARNINGS: '^Some (release|upgrade)\(s\) did not have a releaseTimestamp, but as we.re running with minimumReleaseAgeBehaviour=timestamp-optional'
+        # warnings that aren't problems:
+        #   - timestamp-optional: only shows up for deps a repo explicitly opted in
+        #   - terraform (could not determine) is renovate skipping an optional post-update check
+        KNOWN_WARNINGS: |
+          ^Some (release|upgrade)\(s\) did not have a releaseTimestamp, but as we.re running with minimumReleaseAgeBehaviour=timestamp-optional
+          ^Could not determine resolved version after updating package file; skipping pending-version check
         REPORT: /tmp/renovate/report.json
       run: |
         # renovate (bunyan) log levels
@@ -178,14 +182,14 @@ runs:
           '
         }
 
-        unexpected="$(drop_matching "$OPT_IN_WARNINGS" <<< "$reported")"
+        unexpected="$(drop_matching "$KNOWN_WARNINGS" <<< "$reported")"
         problems="$(drop_matching "$IGNORE_PROBLEMS" <<< "$unexpected")"
 
         problem_count="$(jq 'length' <<< "$problems")"
-        opt_in_count=$(( $(jq 'length' <<< "$reported") - $(jq 'length' <<< "$unexpected") ))
+        known_count=$(( $(jq 'length' <<< "$reported") - $(jq 'length' <<< "$unexpected") ))
         ignored_count=$(( $(jq 'length' <<< "$unexpected") - problem_count ))
-        if [ "$opt_in_count" -gt 0 ]; then
-          echo "::notice::ignored $opt_in_count expected renovate warning(s) from timestamp-optional opt-ins"
+        if [ "$known_count" -gt 0 ]; then
+          echo "::notice::ignored $known_count known-harmless renovate warning(s)"
         fi
         if [ "$ignored_count" -gt 0 ]; then
           echo "::notice::ignored $ignored_count renovate problem(s) matching ignore-problems"
