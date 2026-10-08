@@ -1,0 +1,45 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "hwrok renovate defaults - https://github.com/hwrok/action-renovate",
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigestsToSemver"],
+  "dependencyDashboard": false,
+  "semanticCommits": "enabled",
+  "rangeStrategy": "pin",
+  "prBodyTemplate": "{{{header}}}{{{table}}}{{{notes}}}{{{changelogs}}}{{{controls}}}",
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "minimumReleaseAge": "0 days"
+  },
+  "packageRules": [
+    {
+      "description": "engines are minimum supported versions - raise by hand",
+      "matchDepTypes": ["engines"],
+      "enabled": false
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions"
+    },
+    {
+      "matchManagers": ["npm"],
+      "groupName": "npm"
+    },
+    {
+      "description": "node/pnpm versions span packageManager, .nvmrc, setup-* inputs, and Dockerfiles - grouped so one bump is one PR",
+      "matchDepNames": ["node", "pnpm"],
+      "groupName": "toolchain"
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "minimumReleaseAge": "60 days"
+    },
+    {
+      "matchUpdateTypes": ["minor"],
+      "minimumReleaseAge": "14 days"
+    },
+    {
+      "matchUpdateTypes": ["patch"],
+      "minimumReleaseAge": "7 days"
+    }
+  ]
+}

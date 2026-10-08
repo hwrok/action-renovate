@@ -1,0 +1,55 @@
+name: renovate
+
+on:
+  schedule:
+    - cron: '17 6 1 * *' # 1st of the month, 06:17
+      timezone: 'America/Chicago'
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'dry run mode'
+        type: choice
+        options: [off, extract, lookup, full]
+        default: off
+      log-level:
+        type: choice
+        options: [info, debug]
+        default: info
+  pull_request:
+    types: [edited]
+
+permissions:
+  contents: read
+
+jobs:
+  renovate:
+    # pull_request: only the rebase/retry checkbox on renovate's own PRs
+    if: >-
+      github.event_name != 'pull_request' || (
+        startsWith(github.head_ref, 'renovate/') &&
+        github.event.sender.type != 'Bot' &&
+        contains(github.event.pull_request.body, '- [x] <!-- rebase-check -->')
+      )
+    # job-level so skipped pull_request runs don't queue behind a real one
+    concurrency:
+      group: renovate
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: print workflow data
+        uses: hwrok/print-workflow-data@b7a0a34769eb7c0f2bfe7fcdc2683cd6572c62fd # v1.3.0
+        with:
+          caller-inputs: ${{ toJSON(inputs) }}
+
+      - name: renovate (uses self)
+        uses: ./
+        with:
+          app-client-id: ${{ vars.HWROK_RENOVATE_BOT_CLIENT_ID }}
+          app-private-key: ${{ secrets.HWROK_RENOVATE_BOT_PRIVATE_KEY }}
+          dry-run: ${{ inputs.dry-run != 'off' && inputs.dry-run || '' }}
+          log-level: ${{ inputs.log-level || 'info' }}

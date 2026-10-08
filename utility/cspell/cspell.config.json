@@ -1,0 +1,13 @@
+{
+  "language": "en",
+  "dictionaryDefinitions": [
+    {
+      "name": "dictionary",
+      "path": "./dictionary.txt"
+    }
+  ],
+  "dictionaries": ["dictionary"],
+  "words": [],
+  "allowCompoundWords": true,
+  "ignorePaths": ["**/pnpm-lock.yaml"]
+}

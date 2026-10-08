@@ -1,0 +1,123 @@
+name: release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+  workflow_call:
+    outputs:
+      version:
+        description: 'version'
+        value: ${{ jobs.release.outputs.version }}
+      tag:
+        description: 'version tag'
+        value: ${{ jobs.release.outputs.tag }}
+
+concurrency:
+  group: release
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/validate.yml
+
+  release:
+    needs: [validate]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.compute_version.outputs.semVer }}
+      tag: ${{ steps.check_tag.outputs.tag }}
+    permissions:
+      contents: write
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: print workflow data
+        uses: hwrok/print-workflow-data@b7a0a34769eb7c0f2bfe7fcdc2683cd6572c62fd # v1.3.0
+
+      - name: install gitversion
+        uses: gittools/actions/gitversion/setup@7417b1089e2c7de93510f1901d656ddf60bb024f # v4.7.0
+        with:
+          versionSpec: '6.3.0'
+
+      - name: compute version
+        id: compute_version
+        uses: gittools/actions/gitversion/execute@7417b1089e2c7de93510f1901d656ddf60bb024f # v4.7.0
+        with:
+          configFilePath: .github/.gitversion.yml
+
+      - name: check tag
+        id: check_tag
+        env:
+          SEMVER: ${{ steps.compute_version.outputs.semVer }}
+        run: |
+          echo "version:$SEMVER"
+          tag="v$SEMVER"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if git rev-parse "$tag" >/dev/null 2>&1; then
+            echo "::warning::Tag $tag already exists - skipping release."
+          else
+            echo "should_tag=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: configure git
+        if: steps.check_tag.outputs.should_tag
+        run: |
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+
+      - name: create tag
+        if: steps.check_tag.outputs.should_tag
+        env:
+          TAG: ${{ steps.check_tag.outputs.tag }}
+        run: |
+          git tag "$TAG"
+          git push origin "$TAG"
+
+      - name: changelog
+        if: steps.check_tag.outputs.should_tag
+        env:
+          TAG: ${{ steps.check_tag.outputs.tag }}
+        run: |
+          PREV_TAG=$(git tag --sort=-version:refname | grep -vxF "$TAG" | head -n 1)
+
+          if [ -z "$PREV_TAG" ]; then
+            PREV_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+
+          {
+            echo "## Release $TAG"
+            echo
+            echo "### Changes"
+            git log --pretty="- %s (%h)" "$PREV_TAG".."$TAG"
+          } > "$RUNNER_TEMP/release-notes.md"
+
+      - name: update tracking tag
+        if: steps.check_tag.outputs.should_tag
+        env:
+          SEMVER: ${{ steps.compute_version.outputs.semVer }}
+        run: |
+          TRACKING_TAG="v${SEMVER%%.*}"
+
+          git tag -f "$TRACKING_TAG"
+          git push origin "$TRACKING_TAG" -f
+
+      - name: create release
+        if: steps.check_tag.outputs.should_tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.check_tag.outputs.tag }}
+        run: |
+          gh release create "$TAG" \
+            --verify-tag \
+            --title "Release $TAG" \
+            --notes-file "$RUNNER_TEMP/release-notes.md"

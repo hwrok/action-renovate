@@ -1,0 +1,13 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "dogfoods default.json from main, not a release tag",
+  "extends": ["github>hwrok/action-renovate"],
+  "packageRules": [
+    {
+      "description": "action.yml pins ship to consumers - fix: so gitversion cuts a patch release",
+      "matchFileNames": ["action.yml"],
+      "groupName": "action runtime",
+      "semanticCommitType": "fix"
+    }
+  ]
+}

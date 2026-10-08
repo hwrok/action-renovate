@@ -1,0 +1,50 @@
+name: validate
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: print workflow data
+        uses: hwrok/print-workflow-data@b7a0a34769eb7c0f2bfe7fcdc2683cd6572c62fd # v1.3.0
+
+      # see packageManager in package.json
+      - name: pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+
+      - name: pnpm install
+        id: install-deps
+        run: pnpm install
+
+      - name: check - formatting
+        if: always() && steps.install-deps.outcome == 'success'
+        run: pnpm format
+
+      - name: check - spelling
+        if: always() && steps.install-deps.outcome == 'success'
+        run: pnpm spellcheck
+
+      - name: check - workflows
+        if: always() && steps.install-deps.outcome == 'success'
+        run: pnpm lint:actions
+
+      - name: check - renovate config
+        if: always()
+        run: pnpm lint:renovate

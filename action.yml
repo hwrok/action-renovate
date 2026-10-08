@@ -1,0 +1,139 @@
+name: Renovate
+description: 'self-hosted renovate for the calling repo, via github app token'
+
+branding:
+  color: 'blue'
+  icon: 'refresh-cw'
+
+inputs:
+  app-client-id:
+    description: 'github app client id'
+    required: true
+  app-private-key:
+    description: 'github app private key'
+    required: true
+  dry-run:
+    description: 'renovate dry run mode (extract, lookup, full); empty = real run'
+    required: false
+    default: ''
+  log-level:
+    description: 'renovate log level (debug, info, warn, error)'
+    required: false
+    default: 'info'
+  repository-cache:
+    description: 'persist the renovate repository cache via actions/cache'
+    required: false
+    default: 'true'
+  fail-on:
+    description: 'fail the job if renovate reports a problem at or above this level (warn, error, none)'
+    required: false
+    default: 'warn'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: validate inputs
+      shell: bash
+      env:
+        FAIL_ON: ${{ inputs.fail-on }}
+      run: |
+        if [[ ! "$FAIL_ON" =~ ^(warn|error|none)$ ]]; then
+          echo "::error::fail-on must be warn, error, or none, got '$FAIL_ON'"
+          exit 1
+        fi
+
+    - name: app token
+      id: app-token
+      uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+      with:
+        client-id: ${{ inputs.app-client-id }}
+        private-key: ${{ inputs.app-private-key }}
+        owner: ${{ github.repository_owner }}
+        repositories: ${{ github.event.repository.name }}
+        # https://docs.renovatebot.com/modules/platform/github/ (members is org-level, omitted)
+        permission-administration: read
+        permission-checks: write
+        permission-contents: write
+        permission-issues: write
+        permission-pull-requests: write
+        permission-statuses: write
+        permission-vulnerability-alerts: read
+        permission-workflows: write
+
+    - name: restore cache
+      if: inputs.repository-cache == 'true'
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: /tmp/renovate/cache/renovate/repository
+        key: renovate-cache-${{ github.run_id }}-${{ github.run_attempt }}
+        restore-keys: renovate-cache-
+
+    # renovate's container runs as uid 12021; restored files belong to the runner user
+    - name: fix cache ownership
+      shell: bash
+      run: |
+        sudo mkdir -p /tmp/renovate
+        sudo chown -R 12021:0 /tmp/renovate
+
+    - name: renovate
+      uses: renovatebot/github-action@230ce922b08968d0a4f6f70f295601daff09ef1d # v46.3.7
+      with:
+        token: ${{ steps.app-token.outputs.token }}
+        renovate-version: 44.145.1
+      env:
+        LOG_LEVEL: ${{ inputs.log-level }}
+        RENOVATE_DRY_RUN: ${{ inputs.dry-run }}
+        RENOVATE_REPOSITORIES: ${{ github.repository }}
+        RENOVATE_ONBOARDING: 'false'
+        RENOVATE_REQUIRE_CONFIG: 'required'
+        RENOVATE_PLATFORM_COMMIT: 'enabled'
+        RENOVATE_REPOSITORY_CACHE: ${{ inputs.repository-cache == 'true' && 'enabled' || 'disabled' }}
+        RENOVATE_REPORT_TYPE: 'file'
+        RENOVATE_REPORT_PATH: /tmp/renovate/report.json
+
+    - name: save cache
+      if: inputs.repository-cache == 'true' && !cancelled()
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: /tmp/renovate/cache/renovate/repository
+        key: renovate-cache-${{ github.run_id }}-${{ github.run_attempt }}
+
+    # renovate exits 0 on a lot of per-repo failures (auth, host errors) - the report doesn't
+    - name: check report
+      if: ${{ !cancelled() }}
+      shell: bash
+      env:
+        FAIL_ON: ${{ inputs.fail-on }}
+        REPORT: /tmp/renovate/report.json
+      run: |
+        # renovate (bunyan) log levels
+        case "$FAIL_ON" in
+          none) exit 0 ;;
+          warn) min_level=40 ;;
+          error) min_level=50 ;;
+        esac
+
+        if [ ! -f "$REPORT" ]; then
+          echo "::error::no renovate report at $REPORT - renovate didn't finish"
+          exit 1
+        fi
+
+        # problems are reported both globally and per repository
+        problems="$(jq -c --argjson min_level "$min_level" '
+          [.problems[], (.repositories[] | (.problems // [])[])]
+          | map(select(.level >= $min_level))
+        ' "$REPORT")"
+        problem_count="$(jq 'length' <<< "$problems")"
+
+        if [ "$problem_count" -eq 0 ]; then
+          echo "no renovate problems at or above $FAIL_ON"
+          exit 0
+        fi
+
+        jq -r '.[] | "::error::renovate: \(.msg)"' <<< "$problems"
+        {
+          echo "### renovate: $problem_count problem(s) at or above $FAIL_ON"
+          echo
+          jq -r '.[] | "- level \(.level): \(.msg)"' <<< "$problems"
+        } >> "$GITHUB_STEP_SUMMARY"
+        exit 1
