@@ -8,6 +8,7 @@
   "rangeStrategy": "pin",
   "postUpdateOptions": ["gomodTidy", "gomodUpdateImportPaths"],
   "prBodyTemplate": "{{{header}}}{{{table}}}{{{warnings}}}{{{notes}}}{{{controls}}}",
+  "fetchChangeLogs": "off",
   "vulnerabilityAlerts": {
     "enabled": true,
     "minimumReleaseAge": "0 days"
