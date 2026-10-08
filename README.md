@@ -101,7 +101,7 @@ ignore-problems: |
 
 - Actions pinned to SHA with a `# vX.Y.Z` comment
 - Exact version pins (`rangeStrategy: pin`), except `engines`, which is left alone
-- Groups: `github-actions`, `npm`, `terraform`, and `toolchain`. Majors split into `major-*` PRs
+- Groups: `github-actions`, `npm`, `terraform`, `docker`, and `toolchain`. Majors split into `major-*` PRs
 - Cooldowns: major 60d, minor 14d, patch 7d; vulnerability fixes 0d. Versioned runner labels (`ubuntu-24.04`) skip cooldowns; `-latest` is never touched
 - Dependency Dashboard off. To rebase/retry a PR, tick its checkbox, then dispatch the workflow
 
