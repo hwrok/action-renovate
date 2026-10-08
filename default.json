@@ -6,6 +6,7 @@
   "prHourlyLimit": 0,
   "semanticCommits": "enabled",
   "rangeStrategy": "pin",
+  "postUpdateOptions": ["gomodTidy"],
   "prBodyTemplate": "{{{header}}}{{{table}}}{{{warnings}}}{{{notes}}}{{{controls}}}",
   "vulnerabilityAlerts": {
     "enabled": true,
@@ -50,8 +51,16 @@
       }
     },
     {
-      "description": "node/pnpm versions span packageManager, .nvmrc, setup-* inputs, and Dockerfiles - grouped so one bump is one PR",
-      "matchDepNames": ["node", "pnpm"],
+      "matchManagers": ["gomod"],
+      "groupName": "go",
+      "commitMessageAction": "Update",
+      "group": {
+        "commitMessageTopic": "{{{groupName}}}"
+      }
+    },
+    {
+      "description": "node/pnpm/go versions span packageManager, .nvmrc, go.mod toolchain, setup-* inputs, and Dockerfiles - grouped so one bump is one PR",
+      "matchDepNames": ["node", "pnpm", "go"],
       "groupName": "toolchain",
       "commitMessageAction": "Update",
       "group": {

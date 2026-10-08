@@ -1,5 +1,6 @@
 behaviour
 esac
+gomod
 gsub
 hwrok
 rhysd
