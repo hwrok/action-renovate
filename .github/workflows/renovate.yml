@@ -15,6 +15,11 @@ on:
         type: choice
         options: [info, debug]
         default: info
+      permissions:
+        description: 'app token permissions'
+        type: choice
+        options: [scoped, installation]
+        default: scoped
 
 permissions:
   contents: read
@@ -43,3 +48,4 @@ jobs:
           app-private-key: ${{ secrets.HWROK_RENOVATE_BOT_PRIVATE_KEY }}
           dry-run: ${{ inputs.dry-run != 'none' && inputs.dry-run || '' }}
           log-level: ${{ inputs.log-level || 'info' }}
+          permissions: ${{ inputs.permissions || 'scoped' }}
