@@ -76,15 +76,16 @@ A repo without a renovate config is skipped (`requireConfig: required`, no onboa
 
 ## Inputs
 
-| Input              | Description                                                                          | Default |
-| ------------------ | ------------------------------------------------------------------------------------ | ------- |
-| `app-client-id`    | GitHub App client id                                                                 |         |
-| `app-private-key`  | GitHub App private key                                                               |         |
-| `dry-run`          | `extract`, `lookup`, `full`; empty = real run                                        | `''`    |
-| `log-level`        | Renovate log level                                                                   | `info`  |
-| `repository-cache` | Persist Renovate's repository cache via `actions/cache`                              | `true`  |
-| `fail-on`          | Lowest report problem level that fails the job: `warn`, `error`, or `none`           | `warn`  |
-| `ignore-problems`  | Newline-separated regexes; matching report problems don't fail the job, at any level | `''`    |
+| Input              | Description                                                                          | Default  |
+| ------------------ | ------------------------------------------------------------------------------------ | -------- |
+| `app-client-id`    | GitHub App client id                                                                 |          |
+| `app-private-key`  | GitHub App private key                                                               |          |
+| `dry-run`          | `extract`, `lookup`, `full`; empty = real run                                        | `''`     |
+| `log-level`        | Renovate log level                                                                   | `info`   |
+| `repository-cache` | Persist Renovate's repository cache via `actions/cache`                              | `true`   |
+| `fail-on`          | Lowest report problem level that fails the job: `warn`, `error`, or `none`           | `warn`   |
+| `ignore-problems`  | Newline-separated regexes; matching report problems don't fail the job, at any level | `''`     |
+| `permissions`      | `scoped`: token requests the permissions below; `installation`: inherits the app's   | `scoped` |
 
 Renovate exits 0 on plenty of per-repo failures (bad token, external host errors), so `fail-on` reads Renovate's JSON report instead of trusting the exit code.
 
@@ -92,6 +93,8 @@ Known-harmless warnings are always skipped:
 
 - `timestamp-optional`: only shows up for deps a repo explicitly opted in
 - Terraform "Could not determine resolved version": Renovate skipping an optional post-update check
+
+A repo that extracts no dependencies (no config on the default branch, or disabled) counts as an error-level problem: Renovate reports that as success. A repo that really has no dependencies needs `ignore-problems: ^renovate extracted no dependencies`.
 
 Anything else can be skipped per repo:
 
@@ -120,4 +123,5 @@ Override anything in the consuming repo's config.
 - GitHub App installed on the repo. Permissions:
   - read/write: Checks, Commit statuses, Contents, Issues, Pull requests, Workflows
   - read: Administration, Dependabot alerts, Metadata
+  - shared app without all of these: `permissions: installation` (token gets whatever the installation grants)
 - The App's client id and private key stored as a variable and secret (`APP_CLIENT_ID` / `APP_PRIVATE_KEY` above are placeholders)
